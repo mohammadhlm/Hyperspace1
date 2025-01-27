@@ -1,25 +1,25 @@
 #!/bin/bash
 
-# 脚本保存路径
+# Script save path
 SCRIPT_PATH="$HOME/Hyperspace.sh"
 
-# 主菜单函数
+# Main menu function
 function main_menu() {
     while true; do
         clear
-        echo "脚本由大赌社区哈哈哈哈编写，推特 @ferdie_jhovie，免费开源，请勿相信收费"
-        echo "如有问题，可联系推特，仅此只有一个号"
+        echo "Script developed by the Dadu Community hahaha, Twitter @ferdie_jhovie, free and open-source, do not trust paid versions"
+        echo "If you have any issues, contact via Twitter, only one account available"
         echo "================================================================"
-        echo "退出脚本，请按键盘 ctrl + C 退出即可"
-        echo "请选择要执行的操作:"
-        echo "1. 部署hyperspace节点"
-        echo "2. 查看日志"
-        echo "3. 查看积分"
-        echo "4. 删除节点（停止节点）"
-        echo "5. 启用日志监控"
-        echo "6. 退出脚本"
+        echo "To exit the script, press Ctrl + C on your keyboard"
+        echo "Please select an operation to perform:"
+        echo "1. Deploy Hyperspace Node"
+        echo "2. View Logs"
+        echo "3. View Points"
+        echo "4. Delete Node (Stop Node)"
+        echo "5. Enable Log Monitoring"
+        echo "6. Exit Script"
         echo "================================================================"
-        read -p "请输入选择 (1/2/3/4/5/6): " choice
+        read -p "Please enter your choice (1/2/3/4/5/6): " choice
 
         case $choice in
             1)  deploy_hyperspace_node ;;
@@ -28,170 +28,170 @@ function main_menu() {
             4)  delete_node ;;
             5)  start_log_monitor ;;
             6)  exit_script ;;
-            *)  echo "无效选择，请重新输入！"; sleep 2 ;;
+            *)  echo "Invalid choice, please try again!"; sleep 2 ;;
         esac
     done
 }
 
-# 部署hyperspace节点
+# Deploy Hyperspace Node
 function deploy_hyperspace_node() {
-    # 执行安装命令
-    echo "正在执行安装命令：curl https://download.hyper.space/api/install | bash"
+    # Execute installation command
+    echo "Executing installation command: curl https://download.hyper.space/api/install | bash"
     curl https://download.hyper.space/api/install | bash
 
-    # 获取安装后新添加的路径
+    # Get the newly added PATH after installation
     NEW_PATH=$(bash -c 'source /root/.bashrc && echo $PATH')
     
-    # 更新当前shell的PATH
+    # Update the current shell's PATH
     export PATH="$NEW_PATH"
 
-    # 验证aios-cli是否可用
+    # Verify if aios-cli is available
     if ! command -v aios-cli &> /dev/null; then
-        echo "aios-cli 命令未找到，正在重试..."
+        echo "aios-cli command not found, retrying..."
         sleep 3
-        # 再次尝试更新PATH
+        # Attempt to update PATH again
         export PATH="$PATH:/root/.local/bin"
         if ! command -v aios-cli &> /dev/null; then
-            echo "无法找到 aios-cli 命令，请手动运行 'source /root/.bashrc' 后重试"
-            read -n 1 -s -r -p "按任意键返回主菜单..."
+            echo "Cannot find aios-cli command, please manually run 'source /root/.bashrc' and try again"
+            read -n 1 -s -r -p "Press any key to return to the main menu..."
             return
         fi
     fi
 
-    # 提示输入屏幕名称，默认值为 'hyper'
-    read -p "请输入屏幕名称 (默认值: hyper): " screen_name
+    # Prompt for screen name, default is 'hyper'
+    read -p "Please enter the screen name (default: hyper): " screen_name
     screen_name=${screen_name:-hyper}
-    echo "使用的屏幕名称是: $screen_name"
+    echo "Using screen name: $screen_name"
 
-    # 清理已存在的 'hyper' 屏幕会话
-    echo "检查并清理现有的 'hyper' 屏幕会话..."
+    # Clean up existing 'hyper' screen sessions
+    echo "Checking and cleaning existing '$screen_name' screen sessions..."
     screen -ls | grep "$screen_name" &>/dev/null
     if [ $? -eq 0 ]; then
-        echo "找到现有的 '$screen_name' 屏幕会话，正在停止并删除..."
+        echo "Found existing '$screen_name' screen session, stopping and deleting..."
         screen -S "$screen_name" -X quit
         sleep 2
     else
-        echo "没有找到现有的 '$screen_name' 屏幕会话。"
+        echo "No existing '$screen_name' screen session found."
     fi
 
-    # 创建一个新的屏幕会话
-    echo "创建一个名为 '$screen_name' 的屏幕会话..."
+    # Create a new screen session
+    echo "Creating a screen session named '$screen_name'..."
     screen -S "$screen_name" -dm
 
-    # 在屏幕会话中运行 aios-cli start
-    echo "在屏幕会话 '$screen_name' 中运行 'aios-cli start' 命令..."
+    # Run aios-cli start in the screen session
+    echo "Running 'aios-cli start' command in screen session '$screen_name'..."
     screen -S "$screen_name" -X stuff "aios-cli start\n"
 
-    # 等待几秒钟确保命令执行
+    # Wait a few seconds to ensure the command executes
     sleep 5
 
-    # 退出屏幕会话
-    echo "退出屏幕会话 '$screen_name'..."
+    # Detach from the screen session
+    echo "Detaching from screen session '$screen_name'..."
     screen -S "$screen_name" -X detach
     sleep 5
     
-    # 确保环境变量已经生效
-    echo "确保环境变量更新..."
+    # Ensure environment variables are updated
+    echo "Ensuring environment variables are updated..."
     source /root/.bashrc
-    sleep 4  # 等待4秒确保环境变量加载
+    sleep 4  # Wait for 4 seconds to ensure environment variables are loaded
 
-    # 打印当前 PATH，确保 aios-cli 在其中
-    echo "当前 PATH: $PATH"
+    # Print current PATH to ensure aios-cli is included
+    echo "Current PATH: $PATH"
 
-    # 提示用户输入私钥并保存为 my.pem 文件
-    echo "请输入你的私钥（按 CTRL+D 结束）："
+    # Prompt user to enter private key and save it as my.pem file
+    echo "Please enter your private key (press CTRL+D to finish):"
     cat > my.pem
 
-    # 使用 my.pem 文件运行 import-keys 命令
-    echo "正在使用 my.pem 文件运行 import-keys 命令..."
+    # Use the my.pem file to run the import-keys command
+    echo "Running import-keys command using my.pem file..."
     
-    # 运行 import-keys 命令
+    # Execute import-keys command
     aios-cli hive import-keys ./my.pem
     sleep 5
 
-    # 定义模型变量
+    # Define model variable
     model="hf:TheBloke/phi-2-GGUF:phi-2.Q4_K_M.gguf"
 
-    # 添加模型并重试
-    echo "正在通过命令 'aios-cli models add' 添加模型..."
+    # Add model and retry if necessary
+    echo "Adding model using 'aios-cli models add' command..."
     while true; do
         if aios-cli models add "$model"; then
-            echo "模型添加成功并且下载完成！"
+            echo "Model added successfully and downloaded!"
             break
         else
-            echo "添加模型时发生错误，正在重试..."
+            echo "Error adding model, retrying..."
             sleep 3
         fi
     done
 
-    # 登录并选择等级
-    echo "正在登录并选择等级..."
+    # Log in and select tier
+    echo "Logging in and selecting tier..."
 
-    # 登录到 Hive
+    # Log in to Hive
     aios-cli hive login
 
-    # 提示用户选择等级
-    echo "请选择等级（1-5）："
+    # Prompt user to select tier
+    echo "Please select a tier (1-5):"
     select tier in 1 2 3 4 5; do
         case $tier in
             1|2|3|4|5)
-                echo "你选择了等级 $tier"
+                echo "You selected tier $tier"
                 aios-cli hive select-tier $tier
                 break
                 ;;
             *)
-                echo "无效的选择，请输入 1 到 5 之间的数字。"
+                echo "Invalid selection, please enter a number between 1 and 5."
                 ;;
         esac
     done
 
-    # 连接到 Hive
+    # Connect to Hive
     aios-cli hive connect
     sleep 5
 
-    # 停止 aios-cli 进程
-    echo "使用 'aios-cli kill' 停止 'aios-cli start' 进程..."
+    # Stop the aios-cli process
+    echo "Stopping 'aios-cli start' process using 'aios-cli kill'..."
     aios-cli kill
 
-    # 在屏幕会话中运行 aios-cli start，并定向日志文件
-    echo "在屏幕会话 '$screen_name' 中运行 'aios-cli start --connect'，并将输出定向到 '/root/aios-cli.log'..."
+    # Run aios-cli start in the screen session and redirect output to log file
+    echo "Running 'aios-cli start --connect' in screen session '$screen_name' and redirecting output to '/root/aios-cli.log'..."
     screen -S "$screen_name" -X stuff "aios-cli start --connect >> /root/aios-cli.log 2>&1\n"
 
-    echo "部署hyperspace节点完成，'aios-cli start --connect' 已在屏幕内运行，系统已恢复到后台。"
+    echo "Hyperspace node deployment completed, 'aios-cli start --connect' is running in the screen session, and the system has been detached."
 
-    # 提示用户按任意键返回主菜单
-    read -n 1 -s -r -p "按任意键返回主菜单..."
+    # Prompt user to press any key to return to the main menu
+    read -n 1 -s -r -p "Press any key to return to the main menu..."
     main_menu
 }
 
-# 查看积分
+# View Points
 function view_points() {
-    echo "正在查看积分..."
+    echo "Viewing points..."
     source /root/.bashrc
     aios-cli hive points
     sleep 2
 }
 
-# 删除节点（停止节点）
+# Delete Node (Stop Node)
 function delete_node() {
-    echo "正在使用 'aios-cli kill' 停止节点..."
+    echo "Stopping node using 'aios-cli kill'..."
 
-    # 执行 aios-cli kill 停止节点
+    # Execute aios-cli kill to stop the node
     aios-cli kill
     sleep 2
     
-    echo "'aios-cli kill' 执行完成，节点已停止。"
+    echo "'aios-cli kill' executed successfully, node has been stopped."
 
-    # 提示用户按任意键返回主菜单
-    read -n 1 -s -r -p "按任意键返回主菜单..."
+    # Prompt user to press any key to return to the main menu
+    read -n 1 -s -r -p "Press any key to return to the main menu..."
     main_menu
 }
 
-# 启用日志监控
+# Enable Log Monitoring
 function start_log_monitor() {
-    echo "启动日志监控..."
+    echo "Starting log monitoring..."
 
-    # 创建监控脚本文件
+    # Create monitoring script file
     cat > /root/monitor.sh << 'EOL'
 #!/bin/bash
 LOG_FILE="/root/aios-cli.log"
@@ -202,7 +202,7 @@ MIN_RESTART_INTERVAL=300
 while true; do
     current_time=$(date +%s)
     
-    # 检测到以下几种情况，触发重启
+    # Trigger restart on the following conditions
     if (tail -n 4 "$LOG_FILE" | grep -q "Last pong received.*Sending reconnect signal" || \
         tail -n 4 "$LOG_FILE" | grep -q "Failed to authenticate" || \
         tail -n 4 "$LOG_FILE" | grep -q "Failed to connect to Hive" || \
@@ -210,65 +210,65 @@ while true; do
         tail -n 4 "$LOG_FILE" | grep -q "\"message\": \"Internal server error\"" || \
         tail -n 4 "$LOG_FILE" | grep -q "thread 'main' panicked at aios-cli/src/main.rs:181:39: called \`Option::unwrap()\` on a \`None\` value") && \
        [ $((current_time - LAST_RESTART)) -gt $MIN_RESTART_INTERVAL ]; then
-        echo "$(date): 检测到连接问题、认证失败、连接到 Hive 失败、实例已在运行、内部服务器错误或 'Option::unwrap()' 错误，正在重启服务..." >> /root/monitor.log
+        echo "$(date): Detected connection issues, authentication failure, failed to connect to Hive, instance already running, internal server error, or 'Option::unwrap()' error, restarting service..." >> /root/monitor.log
         
-        # 先发送 Ctrl+C
+        # Send Ctrl+C first
         screen -S "$SCREEN_NAME" -X stuff $'\003'
         sleep 5
         
-        # 执行 aios-cli kill
+        # Execute aios-cli kill
         screen -S "$SCREEN_NAME" -X stuff "aios-cli kill\n"
         sleep 5
         
-        echo "$(date): 清理旧日志..." > "$LOG_FILE"
+        echo "$(date): Cleaning old logs..." > "$LOG_FILE"
         
-        # 重新启动服务
+        # Restart the service
         screen -S "$SCREEN_NAME" -X stuff "aios-cli start --connect >> /root/aios-cli.log 2>&1\n"
         
         LAST_RESTART=$current_time
-        echo "$(date): 服务已重启" >> /root/monitor.log
+        echo "$(date): Service restarted" >> /root/monitor.log
     fi
     sleep 30
 done
 EOL
 
-    # 添加执行权限
+    # Add execute permissions
     chmod +x /root/monitor.sh
 
-    # 在后台启动监控脚本
+    # Start monitoring script in the background
     nohup /root/monitor.sh > /root/monitor.log 2>&1 &
 
-    echo "日志监控已启动，后台运行中。"
-    echo "可以通过查看 /root/monitor.log 来检查监控状态"
+    echo "Log monitoring started and running in the background."
+    echo "You can check the monitoring status by viewing /root/monitor.log"
     sleep 2
 
-    # 提示用户按任意键返回主菜单
-    read -n 1 -s -r -p "按任意键返回主菜单..."
+    # Prompt user to press any key to return to the main menu
+    read -n 1 -s -r -p "Press any key to return to the main menu..."
     main_menu
 }
 
-# 查看日志
+# View Logs
 function view_logs() {
-    echo "正在查看日志..."
-    LOG_FILE="/root/aios-cli.log"   # 日志文件路径
+    echo "Viewing logs..."
+    LOG_FILE="/root/aios-cli.log"   # Log file path
 
     if [ -f "$LOG_FILE" ]; then
-        echo "显示日志的最后 200 行:"
-        tail -n 200 "$LOG_FILE"   # 显示最后 200 行日志
+        echo "Displaying the last 200 lines of the log:"
+        tail -n 200 "$LOG_FILE"   # Display the last 200 lines of the log
     else
-        echo "日志文件不存在: $LOG_FILE"
+        echo "Log file does not exist: $LOG_FILE"
     fi
 
-    # 提示用户按任意键返回主菜单
-    read -n 1 -s -r -p "按任意键返回主菜单..."
+    # Prompt user to press any key to return to the main menu
+    read -n 1 -s -r -p "Press any key to return to the main menu..."
     main_menu
 }
 
-# 退出脚本
+# Exit Script
 function exit_script() {
-    echo "退出脚本..."
+    echo "Exiting script..."
     exit 0
 }
 
-# 调用主菜单函数
+# Call the main menu function
 main_menu
